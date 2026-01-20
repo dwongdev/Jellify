@@ -16,15 +16,14 @@ import TrackPlayer, { State } from 'react-native-track-player'
  */
 export async function previous(): Promise<void> {
 	const { position } = await TrackPlayer.getProgress()
+	const { state } = await TrackPlayer.getPlaybackState()
 
 	if (Math.floor(position) < SKIP_TO_PREVIOUS_THRESHOLD) {
 		await TrackPlayer.stop() // Stop buffering the current track
 		await TrackPlayer.skipToPrevious()
 	} else await TrackPlayer.seekTo(0)
 
-	const { state } = await TrackPlayer.getPlaybackState()
-
-	if (state !== State.Playing) await TrackPlayer.play()
+	if (state === State.Playing) await TrackPlayer.play()
 }
 
 /**
