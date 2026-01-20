@@ -37,11 +37,10 @@ export async function previous(): Promise<void> {
  * @param index The track index to skip to, to skip multiple tracks
  */
 export async function skip(index: number | undefined): Promise<void> {
-	await TrackPlayer.stop() // Stop buffering the current track
+	const { state } = await TrackPlayer.getPlaybackState()
 
 	if (!isUndefined(index)) await TrackPlayer.skip(index)
 	else await TrackPlayer.skipToNext()
 
-	const { state } = await TrackPlayer.getPlaybackState()
-	if (state !== State.Playing) await TrackPlayer.play()
+	if (state === State.Playing) await TrackPlayer.play()
 }
