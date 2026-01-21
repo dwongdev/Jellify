@@ -16,7 +16,7 @@ PODS:
     - hermes-engine/Pre-built (= 0.14.0)
   - hermes-engine/Pre-built (0.14.0)
   - MMKVCore (2.2.4)
-  - NitroFetch (0.1.6):
+  - NitroFetch (0.1.7):
     - boost
     - DoubleConversion
     - fast_float
@@ -3064,7 +3064,7 @@ PODS:
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNScreens (4.19.0):
+  - RNScreens (4.20.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3091,10 +3091,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.19.0)
+    - RNScreens/common (= 4.20.0)
     - SocketRocket
     - Yoga
-  - RNScreens/common (4.19.0):
+  - RNScreens/common (4.20.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3600,7 +3600,7 @@ SPEC CHECKSUMS:
   google-cast-sdk: 32f65af50d164e3c475e79ad123db3cc26fbcd37
   hermes-engine: 83ac7cadb2a3a158ae6d9e4192417c5232065e99
   MMKVCore: f2dd4c9befea04277a55e84e7812f930537993df
-  NitroFetch: 660adfb47f84b28db664f97b50e5dc28506ab6c1
+  NitroFetch: 1a268c80f654b3018397672d264f1e4d646076b1
   NitroMmkv: 8ed7ef6f41b91785fc580c975f68d6d675214767
   NitroModules: 11bba9d065af151eae51e38a6425e04c3b223ff3
   NitroOta: 92d4eb528566b6babf5e4a30adbda44bfa803a9b
@@ -3695,7 +3695,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: cd4be101cfa17ea6bbd438710caa02e286a84381
   RNReactNativeHapticFeedback: be4f1b4bf0398c30b59b76ed92ecb0a2ff3a69c6
   RNReanimated: 942d757148da78f5663d1fdf9ab71d1e75946c22
-  RNScreens: ffbb0296608eb3560de641a711bbdb663ed1f6b4
+  RNScreens: 714e10b6b554f7dc7ad9f78dcf36dc8e3fc73415
   RNSentry: fdb39d5f294e492aa2f08ad80e510310dc223772
   RNWorklets: 01efdd402d236a13651ea5ea5437ca85a44e7afa
   Sentry: c643eb180df401dd8c734c5036ddd9dd9218daa6
