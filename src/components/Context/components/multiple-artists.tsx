@@ -2,7 +2,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import ItemRow from '../../Global/components/item-row'
 import { FlashList } from '@shopify/flash-list'
 import { PlayerParamList } from '../../../screens/Player/types'
-import { CommonActions, RouteProp, StackActions, useNavigation } from '@react-navigation/native'
+import { RouteProp, StackActions, useNavigation } from '@react-navigation/native'
 import { RootStackParamList } from '../../../screens/types'
 import { getTokenValue } from 'tamagui'
 import navigationRef from '../../../../navigation'
@@ -31,7 +31,7 @@ export default function MultipleArtists({
 						rootNavigation.popTo('Tabs')
 
 						navigationRef.dispatch(
-							CommonActions.navigate('Artist', {
+							StackActions.push('Artist', {
 								artist,
 							}),
 						)
