@@ -2,22 +2,19 @@ import React from 'react'
 import { Spacer, XStack, getToken } from 'tamagui'
 import PlayPauseButton from './buttons'
 import Icon from '../../Global/components/icon'
-import { RepeatMode } from 'react-native-track-player'
-import { useToggleShuffle } from '../../../hooks/player/callbacks'
-import { useRepeatModeStoreValue, useShuffle } from '../../../stores/player/queue'
+import { useRepeatMode, useShuffle } from '../../../stores/player/queue'
+import { toggleRepeatMode } from '../../../hooks/player/functions/repeat-mode'
+import { toggleShuffle } from '../../../hooks/player/functions/shuffle'
 import { previous, skip } from '../../../hooks/player/functions/controls'
-import { toggleRepeatMode } from '../../../hooks/player/functions/playback'
 
 export default function Controls({
 	onLyricsScreen,
 }: {
 	onLyricsScreen?: boolean
 }): React.JSX.Element {
-	const repeatMode = useRepeatModeStoreValue()
+	const repeatMode = useRepeatMode()
 
 	const shuffled = useShuffle()
-
-	const toggleShuffle = useToggleShuffle()
 
 	return (
 		<XStack alignItems='center' justifyContent='space-between'>
@@ -56,9 +53,9 @@ export default function Controls({
 			{!onLyricsScreen && (
 				<Icon
 					small
-					color={repeatMode === RepeatMode.Off ? '$color' : '$primary'}
-					name={repeatMode === RepeatMode.Track ? 'repeat-once' : 'repeat'}
-					onPress={async () => await toggleRepeatMode()}
+					color={repeatMode === 'off' ? '$color' : '$primary'}
+					name={repeatMode === 'track' ? 'repeat-once' : 'repeat'}
+					onPress={toggleRepeatMode}
 				/>
 			)}
 		</XStack>
