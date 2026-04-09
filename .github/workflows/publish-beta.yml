@@ -71,7 +71,6 @@ jobs:
 
       - name: 📜 Generate release notes using Bun
         run: |
-          bun i
           bun scripts/generate-release-notes.js "${{ steps.setver.outputs.version }}" "${{ steps.commits.outputs.messages }}"
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -249,7 +248,8 @@ jobs:
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: ${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_REPO_PAT: "anultravioletaurora:${{ secrets.SIGNING_REPO_PAT }}"
-
+          RELEASE_NOTES: ${{ needs.generate-release-notes.outputs.release_notes }}
+          
       - name: 📤 Upload iOS Artifact
         uses: actions/upload-artifact@v7
         with:
