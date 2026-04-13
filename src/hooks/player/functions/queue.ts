@@ -13,8 +13,6 @@ import { triggerHaptic } from '../../use-haptic-feedback'
 import Toast from 'react-native-toast-message'
 import { QueuingType } from '../../../enums/queuing-type'
 import { updateTrackMediaInfo } from '../../../providers/Player/utils/event-handlers'
-import reportPlaybackStarted from '../../../api/mutations/playback/functions/playback-started'
-import resolveTrackUrls from '../../../utils/fetching/track-media-info'
 
 type LoadQueueResult = {
 	finalStartIndex: number
@@ -24,21 +22,12 @@ type LoadQueueResult = {
 export const loadNewQueue = async (variables: QueueMutation) => {
 	triggerHaptic('impactLight')
 	usePlayerQueueStore.getState().setIsQueuing(true)
-	const { tracks, finalStartIndex } = await loadQueue({ ...variables })
-
-	// skipToIndex is now settled. Drive a single, authoritative URL-resolution
-	// pass while isQueuing=true so any concurrent native callbacks are still
-	// silenced. resolveTrackUrls bypasses the isQueuing guard intentionally.
-	const tracksNeedingUrls = await TrackPlayer.getTracksNeedingUrls()
-	if (tracksNeedingUrls.length > 0) {
-		await updateTrackMediaInfo(tracksNeedingUrls)
-	}
+	await loadQueue({ ...variables })
 
 	usePlayerQueueStore.getState().setIsQueuing(false)
 
 	if (variables.startPlayback) {
 		TrackPlayer.play()
-		reportPlaybackStarted(tracks[finalStartIndex], 0)
 	}
 }
 
@@ -84,7 +73,7 @@ async function loadQueue({
 		}
 	}
 
-	const finalStartIndex = playlist.findIndex((item) => item.id === startingTrack.Id)
+	const finalStartIndex = playlist.findIndex((item) => item.id === startingTrack.Id) ?? 0
 
 	clearPlaylists()
 
@@ -92,12 +81,18 @@ async function loadQueue({
 
 	await PlayerQueue.addTracksToPlaylist(playlistId, playlist)
 	await PlayerQueue.loadPlaylist(playlistId)
-	await TrackPlayer.skipToIndex(finalStartIndex === -1 ? 0 : finalStartIndex)
+	await TrackPlayer.skipToIndex(finalStartIndex)
 
-	setNewQueue(playlist, queue, finalStartIndex === -1 ? 0 : finalStartIndex, shuffled)
+	const tracksToResolve = await TrackPlayer.getTracksNeedingUrls()
+
+	if (tracksToResolve.length > 0) {
+		await updateTrackMediaInfo(tracksToResolve)
+	}
+
+	setNewQueue(playlist, queue, finalStartIndex, shuffled)
 
 	return {
-		finalStartIndex: finalStartIndex === -1 ? 0 : finalStartIndex,
+		finalStartIndex,
 		tracks: playlist,
 	}
 }
@@ -137,17 +132,15 @@ export const playNextInQueue = async ({ tracks }: AddToQueueMutation) => {
 		return
 	}
 
-	const tracksToPlayNext = await resolveTrackUrls(newTracks, 'stream')
-
 	// Add tracks to the same playlist context
-	await PlayerQueue.addTracksToPlaylist(playlistId, tracksToPlayNext, insertIndex)
+	await PlayerQueue.addTracksToPlaylist(playlistId, newTracks, insertIndex)
 
 	// Get the active queue and update Zustand while isQueuing=true blocks callbacks
 	const updatedQueue = await TrackPlayer.getActualQueue()
 	usePlayerQueueStore.setState((state) => ({
 		...state,
 		queue: [...updatedQueue],
-		unShuffledQueue: [...state.unShuffledQueue, ...tracksToPlayNext],
+		unShuffledQueue: [...state.unShuffledQueue, ...newTracks],
 	}))
 }
 
@@ -172,12 +165,6 @@ export const playLaterInQueue = async ({ tracks }: AddToQueueMutation) => {
 		queue: updatedQueue,
 		unShuffledQueue: [...state.unShuffledQueue, ...newTracks],
 	}))
-
-	// CRITICAL: Resolve track URLs after adding so playback doesn't start before URLs are ready
-	const tracksNeedingUrls = await TrackPlayer.getTracksNeedingUrls()
-	if (tracksNeedingUrls.length > 0) {
-		await updateTrackMediaInfo(tracksNeedingUrls)
-	}
 }
 
 export const addToQueue = async (variables: AddToQueueMutation) => {
