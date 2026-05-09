@@ -1,18 +1,18 @@
-import resolveTrackUrls from '../../../utils/fetching/track-media-info'
-import reportPlaybackCompleted from '../../../api/mutations/playback/functions/playback-completed'
-import reportPlaybackProgress from '../../../api/mutations/playback/functions/playback-progress'
-import reportPlaybackStarted from '../../../api/mutations/playback/functions/playback-started'
-import reportPlaybackStopped from '../../../api/mutations/playback/functions/playback-stopped'
-import isPlaybackFinished from '../../../api/mutations/playback/utils'
-import { usePlayerPlaybackStore } from '../../../stores/player/playback'
-import { updateQueueTracks, usePlayerQueueStore } from '../../../stores/player/queue'
-import { usePlayerSettingsStore } from '../../../stores/settings/player'
-import { resetPlayerVolume } from '../../../utils/audio/normalization'
+import reportPlaybackCompleted from '../../api/mutations/playback/functions/playback-completed'
+import reportPlaybackProgress from '../../api/mutations/playback/functions/playback-progress'
+import reportPlaybackStarted from '../../api/mutations/playback/functions/playback-started'
+import reportPlaybackStopped from '../../api/mutations/playback/functions/playback-stopped'
+import isPlaybackFinished from '../../api/mutations/playback/utils'
+import { usePlayerPlaybackStore } from '../../stores/player/playback'
+import { usePlayerQueueStore } from '../../stores/player/queue'
+import { usePlayerSettingsStore } from '../../stores/settings/player'
+import { resetPlayerVolume } from '../../utils/audio/normalization'
 import { TrackPlayer, Reason, TrackPlayerState, TrackItem } from 'react-native-nitro-player'
 import handleAutoDownload from './auto-download'
-import applyAudioNormalization from '../../../utils/audio/normalization'
-import { captureError } from '../../../utils/logging'
-import LoggingContext from '../../../utils/logging/enums'
+import applyAudioNormalization from '../../utils/audio/normalization'
+import { captureError } from '../../utils/logging'
+import LoggingContext from '../../utils/logging/enums'
+import { updateTrackMediaInfo } from './track-media-info'
 
 /**
  * Tracks the most recent playback state so that resume-from-pause can be
@@ -25,21 +25,6 @@ let currentPlaybackState: TrackPlayerState | null = null
 let lastPeriodicReportPosition = -1
 
 /**
- * Core URL-resolution logic. Fetches fresh playback info for each track,
- * builds updated track objects, calls TrackPlayer.updateTracks and syncs
- * the JS queue store. Has no guards — callers are responsible for gating.
- */
-export async function updateTrackMediaInfo(tracks: TrackItem[]): Promise<TrackItem[]> {
-	const updatedTracks = await resolveTrackUrls(tracks, 'stream')
-
-	await TrackPlayer.updateTracks(updatedTracks)
-
-	updateQueueTracks(updatedTracks)
-
-	return updatedTracks
-}
-
-/**
  * An event handler for the {@link TrackPlayer.onTracksNeedUpdate} event.
  * This is called by the player when it determines that one or more tracks
  * in the queue need updated media info (e.g. empty URLs). The player
@@ -48,26 +33,26 @@ export async function updateTrackMediaInfo(tracks: TrackItem[]): Promise<TrackIt
  * accordingly.
  *
  * @param tracks The {@link TrackItem}s that need URLs
- * @param _lookahead Lookahead is not currently used in this function, but is provided by the player to indicate how many upcoming tracks should be resolved. We resolve all tracks here for simplicity, but this could be optimized in the future to only resolve a subset of tracks based on the lookahead value.
+ * @param lookahead The number of tracks ahead for which the player is requesting updated info.
  * @returns
  */
-export async function onTracksNeedUpdate(tracks: TrackItem[], _lookahead: number) {
+export async function onTracksNeedUpdate(tracks: TrackItem[], lookahead: number) {
 	if (tracks.length === 0) return
 
-	const { isQueuing } = usePlayerQueueStore.getState()
+	console.debug(
+		`[Player Event] onTracksNeedUpdate triggered for ${tracks.length} track(s). Updating media info...`,
+	)
 
-	if (!isQueuing) await updateTrackMediaInfo(tracks)
+	const tracksToUpdate = lookahead > 0 ? tracks.slice(0, lookahead) : tracks
+
+	console.debug(`[Player Event] Updating media info for track lookahead ${tracksToUpdate.length}`)
+
+	await updateTrackMediaInfo(tracksToUpdate)
 }
 
 export async function onChangeTrack(track: TrackItem, _reason?: Reason) {
 	// Grab snapshot of the previous track and playback position for reporting
-	const { isQueuing, queue, currentIndex: prevIndex } = usePlayerQueueStore.getState()
-
-	// If we're in the middle of queuing a new playlist, we can skip reporting playback changes
-	if (isQueuing) {
-		console.info('Skipping playback reporting due to ongoing queue change')
-		return
-	}
+	const { queue, currentIndex: prevIndex } = usePlayerQueueStore.getState()
 
 	const previousTrack = prevIndex !== undefined ? queue[prevIndex] : undefined
 	const lastPosition = usePlayerPlaybackStore.getState().position

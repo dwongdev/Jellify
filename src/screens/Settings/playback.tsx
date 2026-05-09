@@ -1,21 +1,61 @@
 import React from 'react'
-import { YStack, XStack, SizableText, RadioGroup, ScrollView } from 'tamagui'
+import {
+	YStack,
+	XStack,
+	SizableText,
+	RadioGroup,
+	ScrollView,
+	useTheme,
+	getTokenValue,
+} from 'tamagui'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { SwitchWithLabel } from '../../components/Global/helpers/switch-with-label'
 import { RadioGroupItemWithLabel } from '../../components/Global/helpers/radio-group-item-with-label'
-import {
-	useDisplayAudioQualityBadge,
-	useEnableAudioNormalization,
-	useStreamingQuality,
-} from '../../stores/settings/player'
+import { usePlayerSettingsStore } from '../../stores/settings/player'
 import StreamingQuality from '../../enums/audio-quality'
+import { DEFAULT_PLAYER_LOOKAHEAD } from '../../configs/player.config'
+import Slider from '@jellify-music/react-native-reanimated-slider'
+import { useAnimatedReaction, useSharedValue } from 'react-native-reanimated'
+import { runOnJS } from 'react-native-worklets'
 
 export default function PlaybackScreen(): React.JSX.Element {
+	const { primary, neutral } = useTheme()
+
 	const { bottom } = useSafeAreaInsets()
-	const [streamingQuality, setStreamingQuality] = useStreamingQuality()
-	const [enableAudioNormalization, setEnableAudioNormalization] = useEnableAudioNormalization()
-	const [displayAudioQualityBadge, setDisplayAudioQualityBadge] = useDisplayAudioQualityBadge()
+
+	const {
+		streamingQuality,
+		setStreamingQuality,
+		enableAudioNormalization,
+		setEnableAudioNormalization,
+		displayAudioQualityBadge,
+		setDisplayAudioQualityBadge,
+		lookahead,
+		setLookahead,
+	} = usePlayerSettingsStore()
+
+	const lookaheadSharedValue = useSharedValue(lookahead)
+
+	const handleLookaheadChange = async (value: number) => {
+		const roundedValue = Math.round(value)
+
+		if (isNaN(roundedValue) || roundedValue < 1 || roundedValue > 10) {
+			await setLookahead(DEFAULT_PLAYER_LOOKAHEAD)
+		} else {
+			await setLookahead(roundedValue)
+		}
+	}
+
+	useAnimatedReaction(
+		() => lookaheadSharedValue,
+		(prepared) => {
+			const rounded = Math.round(prepared.value)
+			if (rounded !== lookahead) {
+				runOnJS(handleLookaheadChange)(rounded)
+			}
+		},
+	)
 
 	return (
 		<YStack flex={1} backgroundColor='$background' testID='settings-screen-playback'>
@@ -23,10 +63,17 @@ export default function PlaybackScreen(): React.JSX.Element {
 				contentContainerStyle={{ paddingBottom: Math.max(bottom, 16) + 16 }}
 				showsVerticalScrollIndicator={false}
 			>
-				<YStack padding='$4' gap='$6'>
+				<YStack
+					padding='$4'
+					gap='$4'
+					borderColor={'$borderColor'}
+					borderWidth={'$1'}
+					borderRadius={'$4'}
+					margin={'$2'}
+				>
 					<YStack gap='$3'>
 						<YStack gap='$1'>
-							<SizableText size='$4' fontWeight='600'>
+							<SizableText size='$4' fontWeight='$6'>
 								Streaming Quality
 							</SizableText>
 							<SizableText size='$2' color='$borderColor'>
@@ -64,7 +111,9 @@ export default function PlaybackScreen(): React.JSX.Element {
 
 					<XStack alignItems='center' justifyContent='space-between'>
 						<YStack flex={1}>
-							<SizableText size='$4'>Audio Normalization</SizableText>
+							<SizableText size='$4' fontWeight='$6'>
+								Audio Normalization
+							</SizableText>
 							<SizableText size='$2' color='$borderColor'>
 								Normalize volume between tracks
 							</SizableText>
@@ -78,7 +127,9 @@ export default function PlaybackScreen(): React.JSX.Element {
 
 					<XStack alignItems='center' justifyContent='space-between'>
 						<YStack flex={1}>
-							<SizableText size='$4'>Quality Badge</SizableText>
+							<SizableText size='$4' fontWeight='$6'>
+								Quality Badge
+							</SizableText>
 							<SizableText size='$2' color='$borderColor'>
 								Display audio quality in player
 							</SizableText>
@@ -89,6 +140,39 @@ export default function PlaybackScreen(): React.JSX.Element {
 							size='$2'
 						/>
 					</XStack>
+
+					<YStack alignItems='flex-start' gap='$3'>
+						<XStack alignItems='center' justifyContent='space-between' width='100%'>
+							<YStack flex={1}>
+								<SizableText size='$4' fontWeight='$6'>
+									Track Lookahead
+								</SizableText>
+								<SizableText size='$2' color='$borderColor'>
+									Number of upcoming tracks to prefetch
+								</SizableText>
+							</YStack>
+
+							<SizableText
+								size='$4'
+								fontWeight={'$6'}
+								fontVariant={['tabular-nums']}
+								color='$borderColor'
+							>
+								{lookahead}
+							</SizableText>
+						</XStack>
+
+						<Slider
+							value={lookaheadSharedValue}
+							onValueChange={handleLookaheadChange}
+							maxValue={10}
+							thumbWidth={8}
+							color={primary.val}
+							backgroundColor={neutral.val}
+							thumbShadowColor={getTokenValue('$color.black')}
+							trackHeight={getTokenValue('$2')}
+						/>
+					</YStack>
 				</YStack>
 			</ScrollView>
 		</YStack>

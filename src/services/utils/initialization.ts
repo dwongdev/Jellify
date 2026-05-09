@@ -1,27 +1,28 @@
 import { isUndefined } from 'lodash'
 import { TrackPlayer, PlayerQueue } from 'react-native-nitro-player'
-import { clearQueueStore, usePlayerQueueStore } from '../../../stores/player/queue'
-import { usePlayerPlaybackStore } from '../../../stores/player/playback'
+import { clearQueueStore, usePlayerQueueStore } from '../../stores/player/queue'
+import { usePlayerPlaybackStore } from '../../stores/player/playback'
 import {
 	onChangeTrack,
 	onPlaybackProgress,
 	onPlaybackStateChange,
 	onSeek,
 	onTracksNeedUpdate,
-	updateTrackMediaInfo,
 } from './event-handlers'
-import useJellifyStore from '../../../stores'
-import { getAudioCache } from '../../../utils/legacy/offline-mode-utils'
-import navigationRef from '../../../screens/navigation'
-import { captureError } from '../../../utils/logging'
-import LoggingContext from '../../../utils/logging/enums'
+import useJellifyStore from '../../stores'
+import { getAudioCache } from '../../utils/legacy/offline-mode-utils'
+import navigationRef from '../../screens/navigation'
+import { captureError } from '../../utils/logging'
+import LoggingContext from '../../utils/logging/enums'
 import {
 	useStreamingDeviceProfileStore,
 	useDownloadingDeviceProfileStore,
-} from '../../../stores/device-profile'
-import { usePlayerSettingsStore } from '../../../stores/settings/player'
-import { useUsageSettingsStore } from '../../../stores/settings/usage'
-import { getDeviceProfile } from '../../../utils/audio/device-profiles'
+} from '../../stores/device-profile'
+import { usePlayerSettingsStore } from '../../stores/settings/player'
+import { useUsageSettingsStore } from '../../stores/settings/usage'
+import { getDeviceProfile } from '../../utils/audio/device-profiles'
+import { updateTrackMediaInfo } from './track-media-info'
+import applyAudioNormalization from '../../utils/audio/normalization'
 
 /**
  * Initializes the player by registering event handlers and restoring state from storage.
@@ -93,7 +94,6 @@ async function restoreFromStorage() {
 		queue: persistedQueue,
 		currentIndex: persistedIndex,
 		repeatMode,
-		setIsQueuing,
 	} = usePlayerQueueStore.getState()
 
 	const savedPosition = usePlayerPlaybackStore.getState().position
@@ -106,19 +106,15 @@ async function restoreFromStorage() {
 		!isUndefined(persistedIndex) &&
 		persistedIndex !== null
 	) {
-		setIsQueuing(true)
-
 		// Create player playlist from stored queue
 		const playlistId = await PlayerQueue.createPlaylist('Restored Playlist')
 
-		await PlayerQueue.addTracksToPlaylist(playlistId, storedPlayQueue, 0)
+		await PlayerQueue.addTracksToPlaylist(playlistId, storedPlayQueue)
 
 		// Load playlist and set current track
-		await PlayerQueue.loadPlaylist(playlistId)
+		await PlayerQueue.loadPlaylist(playlistId, persistedIndex)
 
-		TrackPlayer.skipToIndex(persistedIndex)
-
-		TrackPlayer.seek(savedPosition)
+		await TrackPlayer.seek(savedPosition)
 
 		try {
 			const tracksNeedingUrls = await TrackPlayer.getTracksNeedingUrls()
@@ -133,7 +129,7 @@ async function restoreFromStorage() {
 			)
 		}
 
-		setIsQueuing(false)
+		await applyAudioNormalization(storedPlayQueue[persistedIndex])
 	}
 
 	try {

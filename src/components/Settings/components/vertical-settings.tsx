@@ -12,6 +12,7 @@ import { useJellifyUser, useJellifyServer } from '../../../stores'
 import HTTPS from '../../../constants/protocols'
 
 import SettingsNavRow from './settings-nav-row'
+import getUserImageUrl from '../../../api/queries/image/utils/avatar'
 
 export default function VerticalSettings(): React.JSX.Element {
 	const { top } = useSafeAreaInsets()
@@ -21,6 +22,8 @@ export default function VerticalSettings(): React.JSX.Element {
 	const [user] = useJellifyUser()
 
 	const isSecure = server?.url.includes(HTTPS)
+
+	const userAvatarUrl = getUserImageUrl()
 
 	return (
 		<YStack flex={1} backgroundColor='$background' testID='settings-screen-root'>
@@ -44,12 +47,15 @@ export default function VerticalSettings(): React.JSX.Element {
 				>
 					<XStack alignItems='center' gap='$3'>
 						<Avatar circular size='$6' backgroundColor='$background25'>
+							<Avatar.Image src={userAvatarUrl} />
 							<Avatar.Fallback>
-								<Icon name='account-music' color='$background' />
+								<YStack alignItems='center' justifyContent='center' flex={1}>
+									<Icon name='account-music' color='$background' />
+								</YStack>
 							</Avatar.Fallback>
 						</Avatar>
 						<YStack flex={1}>
-							<SizableText size='$6' fontWeight='bold' color='$background'>
+							<SizableText size='$6' fontWeight='$6' color='$background'>
 								{user?.name ?? 'Unknown User'}
 							</SizableText>
 							<XStack alignItems='center' gap='$1.5'>
@@ -119,7 +125,7 @@ export default function VerticalSettings(): React.JSX.Element {
 						onPress={() => navigation.navigate('SignOut')}
 						icon={<Icon name='logout' color='$background' />}
 					>
-						<Paragraph color='$background' fontWeight='600'>
+						<Paragraph color='$background' fontWeight='$6'>
 							Sign Out
 						</Paragraph>
 					</Button>
