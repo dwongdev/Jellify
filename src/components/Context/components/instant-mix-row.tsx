@@ -3,6 +3,7 @@ import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client'
 import { ICON_PRESS_STYLES } from '../../../configs/style.config'
 import Icon from '../../Global/components/icon'
 import goToScreenFromContextSheet from '../utils/navigation'
+import { getItemName } from '../../../utils/formatting/item-names'
 
 export default function ViewInstantMixMenuRow({ item }: { item: BaseItemDto }): React.JSX.Element {
 	return (
@@ -18,7 +19,7 @@ export default function ViewInstantMixMenuRow({ item }: { item: BaseItemDto }): 
 		>
 			<Icon small color='$success' name='access-point' />
 
-			<Paragraph fontWeight={'$6'}>View Instant Mix</Paragraph>
+			<Paragraph fontWeight={'$6'}>{`Go to ${getItemName(item)} Mix`}</Paragraph>
 		</ListItem>
 	)
 }
