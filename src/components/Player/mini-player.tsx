@@ -122,8 +122,8 @@ export default function Miniplayer(): React.JSX.Element | null {
 								<ItemImage
 									item={item!}
 									customBlurhash={customBlurhash}
-									width={'$11'}
-									height={'$11'}
+									width={'$3'}
+									height={'$3'}
 									imageOptions={{ maxWidth: 120, maxHeight: 120 }}
 								/>
 							</Animated.View>

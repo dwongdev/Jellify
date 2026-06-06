@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models'
-import { isUndefined } from 'lodash'
 import { getTokenValue, Square, Token } from 'tamagui'
-import { StyleSheet } from 'react-native'
 import { ImageType } from '@jellyfin/sdk/lib/generated-client/models'
 import { getBlurhashFromDto } from '../../../utils/parsing/blurhash'
 import { getItemImageUrl, ImageUrlOptions } from '../../../api/queries/image/utils'
 import { getApi } from '../../../stores/auth/utils'
-import TurboImage from 'react-native-turbo-image'
+import Image from '../utils/image'
+import { Failure } from 'react-native-turbo-image'
+import { NativeSyntheticEvent } from 'react-native'
 
 interface ItemImageProps {
 	item: BaseItemDto
@@ -21,21 +22,14 @@ interface ItemImageProps {
 	imageOptions?: ImageUrlOptions
 }
 
-const baseStyles = StyleSheet.create({
-	view: {
-		alignSelf: 'center',
-		overflow: 'hidden',
-	},
-})
-
 function ItemImage({
 	item,
 	customBlurhash,
 	type = ImageType.Primary,
 	cornered,
 	circular,
-	width,
-	height,
+	width = '100%',
+	height = '100%',
 	testID,
 	imageOptions,
 }: ItemImageProps): React.JSX.Element {
@@ -43,56 +37,33 @@ function ItemImage({
 
 	const blurhash = customBlurhash ?? getBlurhashFromDto(item, type)
 
-	const style = getImageStyle(width, height, cornered, circular)
+	const borderRadius: number = cornered ? 0 : getBorderRadius(circular, width)
 
 	return imageUrl ? (
-		<TurboImage
+		<Image
 			cachePolicy='dataCache'
-			resizeMode='cover'
-			source={{ uri: imageUrl }}
+			objectFit='cover'
+			src={imageUrl}
 			testID={testID}
-			style={{
-				...style,
-				...baseStyles.view,
-			}}
+			width={width}
+			height={height}
+			borderRadius={borderRadius}
 			placeholder={{
 				blurhash,
 			}}
+			alignSelf='center'
+			format={'apng'}
+			showPlaceholderOnFailure
 		/>
 	) : (
-		<Square backgroundColor={'$neutral'} style={{ ...style, ...baseStyles.view }} />
+		<Square
+			backgroundColor={'$neutral'}
+			width={width}
+			height={height}
+			borderRadius={borderRadius}
+			alignSelf='center'
+		/>
 	)
-}
-
-function getImageStyle(
-	width: Token | string | number | string | undefined,
-	height: Token | string | number | string | undefined,
-	cornered: boolean | undefined,
-	circular: boolean | undefined,
-) {
-	return {
-		borderRadius: cornered
-			? 0
-			: width
-				? getBorderRadius(circular, width)
-				: circular
-					? getTokenValue('$20') * 10
-					: getTokenValue('$5'),
-		width: !isUndefined(width)
-			? typeof width === 'number'
-				? width
-				: typeof width === 'string' && width.includes('%')
-					? width
-					: getTokenValue(width as Token)
-			: '100%',
-		height: !isUndefined(height)
-			? typeof height === 'number'
-				? height
-				: typeof height === 'string' && height.includes('%')
-					? height
-					: getTokenValue(height as Token)
-			: '100%',
-	}
 }
 
 /**
@@ -111,17 +82,17 @@ function getBorderRadius(
 		borderRadius =
 			typeof width === 'number'
 				? width
-				: typeof width === 'string' && width.includes('%')
-					? width
-					: getTokenValue(width as Token)
-	} else if (!isUndefined(width)) {
+				: typeof width === 'string' && width.endsWith('%')
+					? getTokenValue('$20') * 25
+					: getTokenValue(width as Token) * 25
+	} else {
 		borderRadius =
 			typeof width === 'number'
 				? width / 25
-				: typeof width === 'string' && width.includes('%')
-					? 0
-					: getTokenValue(width as Token) / 10
-	} else borderRadius = getTokenValue('$10')
+				: typeof width === 'string' && width.endsWith('%')
+					? getTokenValue('$4')
+					: Math.log(getTokenValue(width as Token))
+	}
 
 	return borderRadius
 }

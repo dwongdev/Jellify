@@ -1,7 +1,7 @@
 import { isUndefined } from 'lodash'
 import { TrackPlayer, PlayerQueue } from 'react-native-nitro-player'
-import { clearQueueStore, usePlayerQueueStore } from '../../stores/player/queue'
-import { usePlayerPlaybackStore } from '../../stores/player/playback'
+import { clearQueueStore, usePlayerQueueStore } from '../../../stores/player/queue'
+import { usePlayerPlaybackStore } from '../../../stores/player/playback'
 import {
 	onChangeTrack,
 	onPlaybackProgress,
@@ -9,39 +9,27 @@ import {
 	onSeek,
 	onTracksNeedUpdate,
 } from './event-handlers'
-import useJellifyStore from '../../stores/auth'
-import { getAudioCache } from '../../utils/legacy/offline-mode-utils'
-import navigationRef from '../../screens/navigation'
-import { captureError } from '../../utils/logging'
-import LoggingContext from '../../utils/logging/enums'
+import useJellifyStore from '../../../stores/auth'
+import { getAudioCache } from '../../../utils/legacy/offline-mode-utils'
+import navigationRef from '../../../screens/navigation'
+import { captureError } from '../../../utils/logging'
+import LoggingContext from '../../../utils/logging/enums'
 import {
 	useStreamingDeviceProfileStore,
 	useDownloadingDeviceProfileStore,
-} from '../../stores/device-profile'
-import { usePlayerSettingsStore } from '../../stores/settings/player'
-import { useUsageSettingsStore } from '../../stores/settings/usage'
-import { getDeviceProfile } from '../../utils/audio/device-profiles'
+} from '../../../stores/device-profile'
+import { usePlayerSettingsStore } from '../../../stores/settings/player'
+import { useUsageSettingsStore } from '../../../stores/settings/usage'
+import { getDeviceProfile } from '../../../utils/audio/device-profiles'
 import { updateTrackMediaInfo } from './track-media-info'
-import applyAudioNormalization from '../../utils/audio/normalization'
-
-/**
- * Initializes the player by registering event handlers and restoring state from storage.
- * This function should be called once during app startup.
- */
-export default function Initialize() {
-	syncDeviceProfiles()
-
-	registerEventHandlers()
-
-	restoreFromStorage()
-}
+import applyAudioNormalization from '../../../utils/audio/normalization'
 
 /**
  * Re-derives device profiles from the persisted quality settings on startup.
  * This ensures the profiles reflect the current filtering logic even if the
  * app was updated since the profiles were last persisted to MMKV.
  */
-function syncDeviceProfiles() {
+export function syncDeviceProfiles() {
 	const streamingQuality = usePlayerSettingsStore.getState().streamingQuality
 	const downloadQuality = useUsageSettingsStore.getState().downloadQuality
 
@@ -54,7 +42,7 @@ function syncDeviceProfiles() {
 		.setDeviceProfile(getDeviceProfile(downloadQuality, 'download'))
 }
 
-function registerEventHandlers() {
+export function registerPlayerEventHandlers() {
 	TrackPlayer.onTracksNeedUpdate(onTracksNeedUpdate)
 
 	TrackPlayer.onChangeTrack(onChangeTrack)
@@ -66,7 +54,7 @@ function registerEventHandlers() {
 	TrackPlayer.onSeek(onSeek)
 }
 
-async function restoreFromStorage() {
+export async function restoreFromStorage() {
 	const { migratedToNitroPlayer, setMigratedToNitroPlayer } = useJellifyStore.getState()
 
 	// If we haven't migrated to nitro player yet, we need to clear the persisted queue

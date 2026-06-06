@@ -1,17 +1,17 @@
-import reportPlaybackCompleted from '../../api/mutations/playback/functions/playback-completed'
-import reportPlaybackProgress from '../../api/mutations/playback/functions/playback-progress'
-import reportPlaybackStarted from '../../api/mutations/playback/functions/playback-started'
-import reportPlaybackStopped from '../../api/mutations/playback/functions/playback-stopped'
-import isPlaybackFinished from '../../api/mutations/playback/utils'
-import { usePlayerPlaybackStore } from '../../stores/player/playback'
-import { usePlayerQueueStore } from '../../stores/player/queue'
-import { usePlayerSettingsStore } from '../../stores/settings/player'
-import { resetPlayerVolume } from '../../utils/audio/normalization'
+import reportPlaybackCompleted from '../../../api/mutations/playback/functions/playback-completed'
+import reportPlaybackProgress from '../../../api/mutations/playback/functions/playback-progress'
+import reportPlaybackStarted from '../../../api/mutations/playback/functions/playback-started'
+import reportPlaybackStopped from '../../../api/mutations/playback/functions/playback-stopped'
+import isPlaybackFinished from '../../../api/mutations/playback/utils'
+import { usePlayerPlaybackStore } from '../../../stores/player/playback'
+import { usePlayerQueueStore } from '../../../stores/player/queue'
+import { usePlayerSettingsStore } from '../../../stores/settings/player'
+import { resetPlayerVolume } from '../../../utils/audio/normalization'
 import { TrackPlayer, Reason, TrackPlayerState, TrackItem } from 'react-native-nitro-player'
 import handleAutoDownload from './auto-download'
-import applyAudioNormalization from '../../utils/audio/normalization'
-import { captureError } from '../../utils/logging'
-import LoggingContext from '../../utils/logging/enums'
+import applyAudioNormalization from '../../../utils/audio/normalization'
+import { captureError } from '../../../utils/logging'
+import LoggingContext from '../../../utils/logging/enums'
 import { updateTrackMediaInfo } from './track-media-info'
 
 /**
@@ -21,20 +21,23 @@ import { updateTrackMediaInfo } from './track-media-info'
  */
 let currentPlaybackState: TrackPlayerState | null = null
 
+/** Tracks the last second we processed to avoid redundant logic on sub-second ticks. */
+let lastProcessedPosition = -1
+
 /** Tracks the last floor-rounded position (seconds) that was reported, to avoid duplicate periodic reports. */
 let lastPeriodicReportPosition = -1
 
 /**
  * An event handler for the {@link TrackPlayer.onTracksNeedUpdate} event.
  * This is called by the player when it determines that one or more tracks
- * in the queue need updated media info (e.g. empty URLs). The player
- * provides the list of tracks that need updating, and this handler fetches
- * fresh media info for those tracks and updates the player and queue store
- * accordingly.
+ * in the queue need updated media info (e.g. empty URLs).
+ *
+ * The player provides the list of tracks that need updating, and this handler
+ * fetches fresh media info for those tracks and updates the player and queue
+ * store accordingly.
  *
  * @param tracks The {@link TrackItem}s that need URLs
  * @param lookahead The number of tracks ahead for which the player is requesting updated info.
- * @returns
  */
 export async function onTracksNeedUpdate(tracks: TrackItem[], lookahead: number) {
 	if (tracks.length === 0) return
@@ -50,6 +53,20 @@ export async function onTracksNeedUpdate(tracks: TrackItem[], lookahead: number)
 	await updateTrackMediaInfo(tracksToUpdate)
 }
 
+/**
+ * An event handler for the {@link TrackPlayer.onChangeTrack} event.
+ * This is called by the player when the currently playing track changes
+ * over to a new one.
+ *
+ * Updates the `currentIndex` in the {@link usePLayerQueueStore}, which will
+ * update the track being displayed in the player via Zustand.
+ *
+ * Also reports that playback has either stopped or completed for the previous
+ * track, depending on if the user listened past the detection threshold (80%)
+ *
+ * @param track The {@link TrackItem} the currently playing track
+ * @param _reason The {@link Reason} for the track changing
+ */
 export async function onChangeTrack(track: TrackItem, _reason?: Reason) {
 	// Grab snapshot of the previous track and playback position for reporting
 	const { queue, currentIndex: prevIndex } = usePlayerQueueStore.getState()
@@ -82,17 +99,36 @@ export async function onChangeTrack(track: TrackItem, _reason?: Reason) {
 	}
 }
 
+/**
+ * An event handler for the {@link TrackPlayer.onPlaybackProgress} event.
+ * This is called by the {@link TrackPlayer} each second of playback.
+ *
+ * Always updates the `position` in the {@link usePlayerPlaybackStore} to
+ * update the progress components via Zustand.
+ *
+ * Reports playback progress back to Jellyfin every 10 seconds of playback.
+ *
+ * Triggers an automatic download of the currently playing song after 30% playback.
+ *
+ * @param position The current position in seconds of the {@link TrackPlayer}
+ * @param totalDuration The total duration of the currently playing {@link TrackItem} in seconds
+ */
 export async function onPlaybackProgress(position: number, totalDuration: number) {
 	const flooredPosition = Math.floor(position)
 
-	usePlayerPlaybackStore.setState({
-		position: flooredPosition,
-	})
+	// Bail early if we are still within the same second
+	if (flooredPosition === lastProcessedPosition) return
+
+	lastProcessedPosition = flooredPosition
 
 	const { queue, currentIndex } = usePlayerQueueStore.getState()
 	const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined
 
 	if (!currentTrack) return
+
+	usePlayerPlaybackStore.setState({
+		position: flooredPosition,
+	})
 
 	if (flooredPosition % 10 === 0 && flooredPosition !== lastPeriodicReportPosition) {
 		lastPeriodicReportPosition = flooredPosition
@@ -108,6 +144,13 @@ export async function onPlaybackProgress(position: number, totalDuration: number
 	})
 }
 
+/**
+ * An event handler for the {@link TrackPlayer.onPlaybackStateChange} event.
+ *
+ * @param state The updated {@link TrackPlayerState}
+ * @param reason The {@link Reason} or `undefined` as to why the playback state changed.
+ * @returns
+ */
 export function onPlaybackStateChange(state: TrackPlayerState, reason: Reason | undefined) {
 	const { queue, currentIndex } = usePlayerQueueStore.getState()
 	const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined
@@ -136,6 +179,12 @@ export function onPlaybackStateChange(state: TrackPlayerState, reason: Reason | 
 	}
 }
 
+/**
+ * An event handler for the {@link TrackPlayer.onSeek} event.
+ *
+ * @param position The new position of the {@link TrackPlayer}
+ * @returns
+ */
 export function onSeek(position: number) {
 	const flooredPosition = Math.floor(position)
 
