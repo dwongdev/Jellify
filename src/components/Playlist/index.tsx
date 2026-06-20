@@ -4,17 +4,25 @@ import { StackActions, useNavigation } from '@react-navigation/native'
 import { BaseStackParamList } from '../../screens/types'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client'
-import PlaylistTracklistHeader from './components/header'
 import navigationRef from '../../screens/navigation'
 import { useLayoutEffect, useState } from 'react'
-import Animated, { Easing, FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
-import { ListRenderItemInfo } from 'react-native'
+import Animated, {
+	Easing,
+	FadeIn,
+	FadeOut,
+	LinearTransition,
+	useSharedValue,
+} from 'react-native-reanimated'
+import { ListRenderItemInfo, RefreshControl } from 'react-native'
 import { useAreAllDownloaded } from '../../hooks/downloads'
 import useDownloadTracks, { useDeleteDownloads } from '../../hooks/downloads/mutations'
-import { ICON_PRESS_STYLES } from '../../configs/style.config'
+import { ICON_PRESS_STYLES } from '../../configs/styling/elements'
 import { DraxList, DraxProvider } from 'react-native-drax'
 import { usePlaylistContext } from '../../providers/Playlist'
 import PlaylistTrack from './components/track'
+import { LegendList } from '@legendapp/list/react-native'
+import { itemDraxViewProps } from '../../configs/styling/drax'
+import PlaylistTracklistHeader from './components/header'
 
 export default function Playlist(): React.JSX.Element {
 	const {
@@ -41,6 +49,8 @@ export default function Playlist(): React.JSX.Element {
 
 	// State to track when we're loading all pages before entering edit mode
 	const [isPreparingEditMode, setIsPreparingEditMode] = useState<boolean>(false)
+
+	const scrollPosition = useSharedValue({ x: 0, y: 0 })
 
 	/**
 	 * Fetches all remaining pages before entering edit mode.
@@ -196,25 +206,22 @@ export default function Playlist(): React.JSX.Element {
 	return (
 		<DraxProvider>
 			<DraxList<BaseItemDto>
-				animationConfig='spring'
+				component={LegendList}
+				animationConfig={'spring'}
 				contentInsetAdjustmentBehavior='automatic'
-				data={playlistTracks ?? []}
-				ListHeaderComponent={
-					<PlaylistTracklistHeader
-						setNewName={setNewName}
-						newName={newName}
-						editing={editing}
-						playlist={playlist}
-						playlistTracks={playlistTracks}
-					/>
-				}
-				itemDraxViewProps={{
-					dragHandle: true,
+				containerStyle={{
+					flex: 1,
 				}}
+				ListHeaderComponent={<PlaylistTracklistHeader />}
+				data={playlistTracks}
+				lockToMainAxis
+				itemDraxViewProps={itemDraxViewProps}
 				keyExtractor={keyExtractor}
 				renderItem={renderItem}
 				onReorder={onReorder}
 				onEndReached={handleEndReached}
+				estimatedItemSize={50}
+				refreshControl={<RefreshControl refreshing={isPending} onRefresh={refetch} />}
 			/>
 		</DraxProvider>
 	)

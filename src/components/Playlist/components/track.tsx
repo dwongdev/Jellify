@@ -4,17 +4,13 @@ import { BaseStackParamList, RootStackParamList } from '@/src/screens/types'
 import { BaseItemDto } from '@jellyfin/sdk/lib/generated-client'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { ListRenderItemInfo, StyleSheet } from 'react-native'
+import { ListRenderItemInfo, StyleSheet, View } from 'react-native'
 import { DraxHandle } from 'react-native-drax'
 import Icon from '../../Global/components/icon'
 import Track from '../../Global/components/Track'
 import { XStack } from 'tamagui'
 
-export default function PlaylistTrack({
-	item: track,
-	index,
-	...props
-}: ListRenderItemInfo<BaseItemDto>) {
+export default function PlaylistTrack({ item: track, index }: ListRenderItemInfo<BaseItemDto>) {
 	const { playlist, playlistTracks, onRemoveTrack, editing } = usePlaylistContext()
 
 	const navigation = useNavigation<NativeStackNavigationProp<BaseStackParamList>>()
