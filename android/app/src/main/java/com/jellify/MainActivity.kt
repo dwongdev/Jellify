@@ -31,8 +31,6 @@ class MainActivity : ReactActivity() {
         // react-native-screens fragment factory for proper fragment restoration
         supportFragmentManager.fragmentFactory = RNScreensFragmentFactory()
         super.onCreate(savedInstanceState)
-        // lazy load Google Cast context (if supported on this device)
-        RNGCCastContext.getSharedInstance(this)
   }
 }
 
