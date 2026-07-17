@@ -182,7 +182,6 @@ PODS:
     - ReactNativeDependencies
     - Yoga
   - OpenSSL-Universal (3.6.2000)
-  - PromisesObjC (2.4.1)
   - Pulsar (1.6.1):
     - hermes-engine
     - Pulsar-haptics (= 1.1.4)
@@ -1679,10 +1678,6 @@ PODS:
     - Yoga
   - react-native-carplay (2.4.1-beta.0):
     - React
-  - react-native-google-cast (4.9.1):
-    - google-cast-sdk
-    - PromisesObjC
-    - React
   - react-native-netinfo (12.0.1):
     - hermes-engine
     - RCTRequired
@@ -2609,7 +2604,6 @@ DEPENDENCIES:
   - React-mutationobservernativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
   - react-native-blurhash (from `../node_modules/react-native-blurhash`)
   - react-native-carplay (from `../node_modules/react-native-carplay`)
-  - react-native-google-cast (from `../node_modules/react-native-google-cast`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2670,7 +2664,6 @@ SPEC REPOS:
     - MMKVCore
     - NitroOtaBundleManager
     - OpenSSL-Universal
-    - PromisesObjC
     - Pulsar-haptics
     - SSZipArchive
     - SwiftUIIntrospect
@@ -2779,8 +2772,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-blurhash"
   react-native-carplay:
     :path: "../node_modules/react-native-carplay"
-  react-native-google-cast:
-    :path: "../node_modules/react-native-google-cast"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-pager-view:
@@ -2900,7 +2891,6 @@ SPEC CHECKSUMS:
   NitroPlayer: b14837f14b2c27335590e11c09021a8d91b04a39
   NitroSuperconfig: 753d9d6d6881ed032933114ea8de003b4f0376ae
   OpenSSL-Universal: ecee7b138fa75a74ecf00d7ffd248fb584739b9e
-  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   Pulsar: b7e2b04a978131e30b53267878254ea984e23e80
   Pulsar-haptics: f795eaf55d8d0290148fd97c747dcc6689c3d079
   QuickCrypto: af6ad619e4bf3e80eb22a3da02fba4606372faaa
@@ -2943,7 +2933,6 @@ SPEC CHECKSUMS:
   React-mutationobservernativemodule: f0a0d5ae9b51caf7becbeabf836d716cfedb6bf2
   react-native-blurhash: 994932753df8d58ec605388c96df9e6a039bc60e
   react-native-carplay: 8f388f6f73e5e0f73ed154ad8794371343ee20c0
-  react-native-google-cast: 7be68a5d0b7eeb95a5924c3ecef8d319ef6c0a44
   react-native-netinfo: 2f906d5d9a639090ed1c079135d6485a95f749f1
   react-native-pager-view: 6b98421fc9198e59349977100dc252bbd979cc16
   react-native-safe-area-context: fb5c8ee9f6dd62ef710611b3d370c501f42a4ac0
