@@ -32,7 +32,7 @@ const mmkvStorageFunctions = {
 	},
 }
 
-const clientStorage: TanstackAsyncStorage<string> = mmkvStorageFunctions
+const clientStorage: TanstackAsyncStorage<string> = storageFunctions
 
 export const queryClientPersister = createAsyncStoragePersister({
 	storage: clientStorage,
