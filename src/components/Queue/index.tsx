@@ -2,7 +2,7 @@ import { useCurrentIndex, usePlayQueue } from '../../stores/player/queue'
 import { TrackItem } from 'react-native-nitro-player'
 import { ListRenderItemInfo, Platform, StyleSheet } from 'react-native'
 import { reorderQueue } from '../../hooks/player/functions/queue'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaFrame, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DraxList, DraxProvider, SortableReorderEvent } from 'react-native-drax'
 import QueuedTrack from './components/track'
 import { itemDraxViewProps } from '../../configs/styling/drax'
@@ -15,6 +15,8 @@ import { usePlayerContext } from '../../providers/Player'
 import { Freeze } from 'react-freeze'
 
 export default function Queue(): React.JSX.Element {
+	const { height } = useSafeAreaFrame()
+
 	const { bottom } = useSafeAreaInsets()
 
 	const queue = usePlayQueue()
@@ -39,17 +41,15 @@ export default function Queue(): React.JSX.Element {
 	 *
 	 * @see https://legendapp.com/open-source/list/v3/api/#drawdistance
 	 */
-	const drawDistance = Platform.OS === 'android' ? undefined : ITEM_ROW_HEIGHT * queue.length
+	const drawDistance = Platform.OS === 'android' ? undefined : height
 
-	const { activePage } = usePlayerContext()
-
-	const freeze = activePage != 1
+	const { freezeQueue } = usePlayerContext()
 
 	return (
 		<View flex={1} backgroundColor={'$background'}>
 			<QueueListHeader />
 
-			<Freeze freeze={freeze}>
+			<Freeze freeze={freezeQueue}>
 				<DraxProvider>
 					<DraxList<TrackItem>
 						animationConfig={'spring'}

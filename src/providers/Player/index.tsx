@@ -4,11 +4,13 @@ import PagerView from 'react-native-pager-view'
 
 interface PlayerContext {
 	activePage: number
+	freezeQueue: boolean
 	setPage: (page: number) => void
 }
 
 const PlayerContext = createContext<PlayerContext>({
 	activePage: 0,
+	freezeQueue: true,
 	setPage: (page) => {},
 })
 
@@ -34,11 +36,6 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
 		requestAnimationFrame(() => ref.current?.setPage(page))
 	}
 
-	const value: PlayerContext = {
-		activePage,
-		setPage,
-	}
-
 	const onPageSelected = (
 		e: NativeSyntheticEvent<
 			Readonly<{
@@ -46,7 +43,7 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
 			}>
 		>,
 	) => {
-		setPage(e.nativeEvent.position)
+		setActivePage(e.nativeEvent.position)
 	}
 
 	const onPageScroll = (
@@ -57,9 +54,18 @@ export const PlayerProvider = ({ children }: PlayerProviderProps) => {
 			}>
 		>,
 	) => {
-		if (e.nativeEvent.offset === 0) {
-			setPage(e.nativeEvent.position)
-		}
+		console.debug(
+			`Player page scroll: "Offset: ${e.nativeEvent.offset}", "Position: ${e.nativeEvent.position}"`,
+		)
+		setActivePage(e.nativeEvent.position)
+	}
+
+	const freezeQueue = activePage != 1
+
+	const value: PlayerContext = {
+		activePage,
+		freezeQueue,
+		setPage,
 	}
 
 	return (
