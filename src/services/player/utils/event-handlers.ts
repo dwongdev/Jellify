@@ -1,5 +1,4 @@
 import reportPlaybackProgress from '../../../api/mutations/playback/functions/playback-progress'
-import reportPlaybackStarted from '../../../api/mutations/playback/functions/playback-started'
 import { usePlayerPlaybackStore } from '../../../stores/player/playback'
 import { usePlayerQueueStore } from '../../../stores/player/queue'
 import { TrackPlayer, Reason, TrackPlayerState, TrackItem } from 'react-native-nitro-player'
@@ -9,6 +8,12 @@ import { captureError } from '../../../utils/logging'
 import LoggingContext from '../../../utils/logging/enums'
 import { updateTrackMediaInfo } from './track-media-info'
 import reportPlaybackCompleted from '../../../api/mutations/playback/functions/playback-completed'
+
+/**
+ * {@link AbortController} for signalling when to bail from an "onTracksNeedUpdate"
+ * event.
+ */
+let trackUpdateAbortController: AbortController | null = null
 
 /**
  * Tracks the most recent playback state so that resume-from-pause can be
@@ -47,11 +52,15 @@ export async function onTracksNeedUpdate(tracks: TrackItem[], lookahead: number)
 		`[Player Event] onTracksNeedUpdate triggered for ${tracks.length} track(s). Updating media info...`,
 	)
 
+	trackUpdateAbortController?.abort()
+
 	const tracksToUpdate = lookahead > 0 ? tracks.slice(0, lookahead) : tracks
 
 	console.debug(`[Player Event] Updating media info for track lookahead ${tracksToUpdate.length}`)
 
-	await updateTrackMediaInfo(tracksToUpdate)
+	trackUpdateAbortController = new AbortController()
+
+	await updateTrackMediaInfo(tracksToUpdate, trackUpdateAbortController.signal)
 }
 
 /**
@@ -86,8 +95,6 @@ export async function onChangeTrack(track: TrackItem, reason?: Reason) {
 	 * Apply audio normalization if enabled in the settings, otherwise reset to default volume (100).
 	 */
 	await applyAudioNormalizationIfEnabled(track)
-
-	reportPlaybackStarted(track)
 }
 
 /**
