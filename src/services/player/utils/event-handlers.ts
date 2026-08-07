@@ -8,10 +8,13 @@ import { captureError } from '../../../utils/logging'
 import LoggingContext from '../../../utils/logging/enums'
 import { updateTrackMediaInfo } from './track-media-info'
 import reportPlaybackCompleted from '../../../api/mutations/playback/functions/playback-completed'
+import { Platform } from 'react-native'
 
 /**
- * {@link AbortController} for signalling when to bail from an "onTracksNeedUpdate"
+ * {@link AbortController} for signalling when to bail from an "onTracksNeedUpdate".
  * event.
+ *
+ * This is only used on iOS
  */
 let trackUpdateAbortController: AbortController | null = null
 
@@ -24,9 +27,6 @@ let currentPlaybackState: TrackPlayerState | null = null
 
 /** Tracks the last second we processed to avoid redundant logic on sub-second ticks. */
 let lastProcessedPosition = -1
-
-/** Tracks the last floor-rounded position (seconds) that was reported, to avoid duplicate periodic reports. */
-let lastPeriodicReportPosition = -1
 
 /**
  * Tracks whether we've reported this track as completed / listened to Jellyfin
@@ -58,9 +58,9 @@ export async function onTracksNeedUpdate(tracks: TrackItem[], lookahead: number)
 
 	console.debug(`[Player Event] Updating media info for track lookahead ${tracksToUpdate.length}`)
 
-	trackUpdateAbortController = new AbortController()
+	trackUpdateAbortController = Platform.OS === 'ios' ? new AbortController() : null
 
-	await updateTrackMediaInfo(tracksToUpdate, trackUpdateAbortController.signal)
+	await updateTrackMediaInfo(tracksToUpdate, trackUpdateAbortController?.signal)
 }
 
 /**
@@ -128,14 +128,10 @@ export async function onPlaybackProgress(position: number, totalDuration: number
 		position: flooredPosition,
 	})
 
-	// Report playback progress every 10 seconds
-	if (flooredPosition % 10 === 0 && flooredPosition !== lastPeriodicReportPosition) {
-		lastPeriodicReportPosition = flooredPosition
-		reportPlaybackProgress(currentTrack, flooredPosition, currentPlaybackState === 'paused')
-	}
+	// Report playback progress on the leading edge of a 10 second window
+	reportPlaybackProgress(currentTrack, flooredPosition, currentPlaybackState === 'paused')
 
 	// Mark the track as completed if 2/3s of the track has been completed
-
 	if (position > (totalDuration / 3) * 2 && !trackMarkedAsListened) {
 		reportPlaybackCompleted(currentTrack)
 		trackMarkedAsListened = true
@@ -204,5 +200,4 @@ export function onSeek(position: number) {
 	if (!currentTrack) return
 
 	reportPlaybackProgress(currentTrack, flooredPosition, currentPlaybackState === 'paused')
-	lastPeriodicReportPosition = flooredPosition
 }

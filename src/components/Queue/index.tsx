@@ -55,7 +55,6 @@ export default function Queue(): React.JSX.Element {
 						animationConfig={'spring'}
 						contentInsetAdjustmentBehavior={'scrollableAxes'}
 						component={LegendList}
-						containerStyle={styles.container}
 						contentContainerStyle={{
 							paddingBottom: bottom,
 						}}
@@ -71,15 +70,10 @@ export default function Queue(): React.JSX.Element {
 						itemExiting={FadeOut.springify()}
 						estimatedItemSize={ITEM_ROW_HEIGHT}
 						drawDistance={drawDistance}
+						recycleItems
 					/>
 				</DraxProvider>
 			</Freeze>
 		</View>
 	)
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-	},
-})
