@@ -8,7 +8,8 @@ import { captureError } from '../../../utils/logging'
 import LoggingContext from '../../../utils/logging/enums'
 import { updateTrackMediaInfo } from './track-media-info'
 import reportPlaybackCompleted from '../../../api/mutations/playback/functions/playback-completed'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
+import reportPlaybackStarted from '../../../api/mutations/playback/functions/playback-started'
 
 /**
  * {@link AbortController} for signalling when to bail from an "onTracksNeedUpdate".
@@ -95,6 +96,8 @@ export async function onChangeTrack(track: TrackItem, reason?: Reason) {
 	 * Apply audio normalization if enabled in the settings, otherwise reset to default volume (100).
 	 */
 	await applyAudioNormalizationIfEnabled(track)
+
+	reportPlaybackStarted(track)
 }
 
 /**
@@ -112,12 +115,10 @@ export async function onChangeTrack(track: TrackItem, reason?: Reason) {
  * @param totalDuration The total duration of the currently playing {@link TrackItem} in seconds
  */
 export async function onPlaybackProgress(position: number, totalDuration: number) {
-	const flooredPosition = Math.floor(position)
-
 	// Bail early if we are still within the same second
-	if (flooredPosition === lastProcessedPosition) return
+	if (position === lastProcessedPosition) return
 
-	lastProcessedPosition = flooredPosition
+	lastProcessedPosition = position
 
 	const { queue, currentIndex } = usePlayerQueueStore.getState()
 	const currentTrack = currentIndex !== undefined ? queue[currentIndex] : undefined
@@ -125,11 +126,8 @@ export async function onPlaybackProgress(position: number, totalDuration: number
 	if (!currentTrack) return
 
 	usePlayerPlaybackStore.setState({
-		position: flooredPosition,
+		position,
 	})
-
-	// Report playback progress on the leading edge of a 10 second window
-	reportPlaybackProgress(currentTrack, flooredPosition, currentPlaybackState === 'paused')
 
 	// Mark the track as completed if 2/3s of the track has been completed
 	if (position > (totalDuration / 3) * 2 && !trackMarkedAsListened) {
